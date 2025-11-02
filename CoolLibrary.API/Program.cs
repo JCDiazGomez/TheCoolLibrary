@@ -1,4 +1,8 @@
+using AutoMapper;
+using CoolLibrary.Application.Mappings;
+using CoolLibrary.Domain.Contracts;
 using CoolLibrary.Infrastructure.Data;
+using CoolLibrary.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +13,25 @@ builder.Services.AddControllers();
 // Configure Database Context
 builder.Services.AddDbContext<LibraryDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Register Repository Services
+builder.Services.AddScoped<IAuthors, AuthorsRepository>();
+builder.Services.AddScoped<IBooks, BooksRepository>();
+builder.Services.AddScoped<ICustomers, CustomersRepository>();
+
+// Configure AutoMapper - Especify where maping Profile is located
+builder.Services.AddAutoMapper(typeof(MappingProfile));
+
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 // Configure Health Checks
 builder.Services.AddHealthChecks()
@@ -40,6 +63,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Enable CORS
+app.UseCors("AllowAll");
 
 app.UseAuthorization();
 
