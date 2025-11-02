@@ -1,8 +1,18 @@
+using CoolLibrary.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddControllers();
+
+// Configure Database Context
+builder.Services.AddDbContext<LibraryDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Configure Health Checks
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<LibraryDbContext>("database");
 
 // Configure Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
@@ -32,6 +42,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+// Map Health Check endpoint
+app.MapHealthChecks("/healthz");
 
 app.MapControllers();
 
