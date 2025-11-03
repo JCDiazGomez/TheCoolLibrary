@@ -1,14 +1,43 @@
+using AutoMapper;
+using CoolLibrary.Application.Mappings;
+using CoolLibrary.Application.Services;
+using CoolLibrary.Domain.Contracts;
 using CoolLibrary.Infrastructure.Data;
+using CoolLibrary.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(); 
 
 // Configure Database Context
 builder.Services.AddDbContext<LibraryDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Register Repository Services
+builder.Services.AddScoped<IAuthors, AuthorsRepository>();
+builder.Services.AddScoped<IBooks, BooksRepository>();
+builder.Services.AddScoped<ICustomers, CustomersRepository>();
+builder.Services.AddScoped<ILoans, LoansRepository>();
+
+// Application services
+builder.Services.AddScoped<LoanRequestService>();
+
+// Configure AutoMapper 
+builder.Services.AddAutoMapper(typeof(MappingProfile));
+
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 // Configure Health Checks
 builder.Services.AddHealthChecks()
@@ -40,6 +69,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Enable CORS
+app.UseCors("AllowAll");
 
 app.UseAuthorization();
 
