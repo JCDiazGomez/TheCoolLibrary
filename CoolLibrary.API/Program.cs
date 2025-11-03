@@ -1,5 +1,6 @@
 using AutoMapper;
 using CoolLibrary.Application.Mappings;
+using CoolLibrary.Application.Services;
 using CoolLibrary.Domain.Contracts;
 using CoolLibrary.Infrastructure.Data;
 using CoolLibrary.Infrastructure.Repositories;
@@ -19,6 +20,10 @@ builder.Services.AddDbContext<LibraryDbContext>(options =>
 builder.Services.AddScoped<IAuthors, AuthorsRepository>();
 builder.Services.AddScoped<IBooks, BooksRepository>();
 builder.Services.AddScoped<ICustomers, CustomersRepository>();
+builder.Services.AddScoped<ILoans, LoansRepository>();
+
+// Application services
+builder.Services.AddScoped<LoanRequestService>();
 
 // Configure AutoMapper 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
