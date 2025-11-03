@@ -21,7 +21,7 @@ public class AuthorsRepository : IAuthors
     {
         return await _context.Authors
             .Include(a => a.BookAuthors)
-            .ThenInclude(ba => ba.Book)
+                .ThenInclude(ba => ba.Book)
             .ToListAsync();
     }
 
@@ -32,7 +32,7 @@ public class AuthorsRepository : IAuthors
                        a.LastName.Contains(name) || 
                        (a.FirstName + " " + a.LastName).Contains(name))
             .Include(a => a.BookAuthors)
-            .ThenInclude(ba => ba.Book)
+                .ThenInclude(ba => ba.Book)
             .ToListAsync();
     }
 

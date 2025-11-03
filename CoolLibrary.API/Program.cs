@@ -8,7 +8,8 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(); 
 
 // Configure Database Context
 builder.Services.AddDbContext<LibraryDbContext>(options =>
@@ -19,7 +20,7 @@ builder.Services.AddScoped<IAuthors, AuthorsRepository>();
 builder.Services.AddScoped<IBooks, BooksRepository>();
 builder.Services.AddScoped<ICustomers, CustomersRepository>();
 
-// Configure AutoMapper - Especify where maping Profile is located
+// Configure AutoMapper 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 // Configure CORS

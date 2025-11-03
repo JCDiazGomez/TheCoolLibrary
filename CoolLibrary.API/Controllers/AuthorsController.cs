@@ -1,7 +1,6 @@
 using AutoMapper;
 using CoolLibrary.Application.DTO;
 using CoolLibrary.Domain.Contracts;
-using CoolLibrary.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CoolLibrary.API.Controllers;
@@ -24,9 +23,9 @@ public class AuthorsController : ControllerBase
     }
 
  
-    [HttpGet]
+    [HttpGet("with-books")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<AuthorDTO>>> GetAll()
+    public async Task<ActionResult<IEnumerable<AuthorDTO>>> GetAllAuthorsWithBooks()
     {
         try
         {
@@ -36,8 +35,8 @@ public class AuthorsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving all authors");
-            return StatusCode(500, "An error occurred while retrieving authors");
+            _logger.LogError(ex, "Error retrieving all authors with books");
+            return StatusCode(500, "An error occurred while retrieving authors and their books");
         }
     }
 }

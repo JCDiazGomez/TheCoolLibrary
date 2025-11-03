@@ -21,5 +21,8 @@ namespace CoolLibrary.Application.DTO
    
         public string? Nationality { get; set; }
 
+    
+        public List<AuthorBookDTO> Books { get; set; } = new();
+
     }
 }
