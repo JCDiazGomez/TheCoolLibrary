@@ -1,6 +1,7 @@
 using CoolLibrary.Domain.Entities;
 using CoolLibrary.Domain.Enums;
 using CoolLibrary.Infrastructure.Data.Configurations;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoolLibrary.Infrastructure.Data;
@@ -8,7 +9,7 @@ namespace CoolLibrary.Infrastructure.Data;
 /// <summary>
 /// Entity Framework DbContext for the Library Management System
 /// </summary>
-public class LibraryDbContext : DbContext
+public class LibraryDbContext : IdentityDbContext
 {
     public LibraryDbContext(DbContextOptions<LibraryDbContext> options) : base(options)
     {
