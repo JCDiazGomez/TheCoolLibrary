@@ -67,6 +67,7 @@ builder.Services.AddDbContext<LibraryDbContext>(options =>
 builder.Services.AddIdentityCore<IdentityUser>().AddRoles<IdentityRole>().AddEntityFrameworkStores<LibraryDbContext>().AddDefaultTokenProviders();
 
 
+
 // Register Repository Services
 builder.Services.AddScoped<IAuthors, AuthorsRepository>();
 builder.Services.AddScoped<IBooks, BooksRepository>();
