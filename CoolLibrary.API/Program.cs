@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using Azure.Identity;
 using Azure;
 using CoolLibrary.Application.Mappings;
@@ -11,12 +11,44 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Reflection;
+using CoolLibrary.API.Filters;
+using Asp.Versioning;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddControllers()
     .AddNewtonsoftJson();
+
+// Configure API Versioning
+// This enables versioning via URL path (e.g., /api/v1/customers, /api/v2/customers)
+builder.Services.AddApiVersioning(options =>
+{
+    // Default version if client doesn't specify one
+    options.DefaultApiVersion = new ApiVersion(1, 0);  // v1.0
+    
+    // Use default version when client doesn't specify
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    
+    // Report supported versions in response headers
+    // Adds headers: api-supported-versions, api-deprecated-versions
+    options.ReportApiVersions = true;
+    
+    // Read version from URL path: /api/v1/customers
+    // Other options: QueryString (?api-version=1.0), Header (x-api-version)
+    options.ApiVersionReader = new UrlSegmentApiVersionReader();
+})
+.AddApiExplorer(options =>
+{
+    // Format version as 'v{major}' in URLs (e.g., v1, v2)
+    // Alternative: 'v{major}.{minor}' for v1.0, v2.0
+    options.GroupNameFormat = "'v'VVV";
+    
+    // Replace version placeholder in route templates
+    // Changes [controller] to the actual controller name
+    options.SubstituteApiVersionInUrl = true;
+});
 
 var keyVaultUrl = builder.Configuration["KeyVault:Url"];
 if (!string.IsNullOrWhiteSpace(keyVaultUrl) && !builder.Environment.IsDevelopment())
@@ -78,6 +110,10 @@ builder.Services.AddScoped<ILoans, LoansRepository>();
 // Application services
 builder.Services.AddScoped<LoanRequestService>();
 
+// Authentication services
+// TokenService: Generates JWT tokens for authenticated users
+builder.Services.AddScoped<TokenService>();
+
 // Configure AutoMapper 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
@@ -98,17 +134,52 @@ builder.Services.AddHealthChecks()
 
 // Configure Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
+
+// Configure Swagger to generate separate documents per API version
+var apiVersionDescriptionProvider = builder.Services.BuildServiceProvider()
+    .GetRequiredService<Asp.Versioning.ApiExplorer.IApiVersionDescriptionProvider>();
+
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    // Generate a Swagger document for EACH API version
+    foreach (var description in apiVersionDescriptionProvider.ApiVersionDescriptions)
     {
-        Title = "CoolLibrary API",
-        Version = "v1",
-        Description = "A Library Management System API built with Clean Architecture"
+        options.SwaggerDoc(description.GroupName, new Microsoft.OpenApi.Models.OpenApiInfo
+        {
+            Title = "CoolLibrary API",
+            Version = description.ApiVersion.ToString(),
+            Description = $"A Library Management System API built with Clean Architecture - Version {description.ApiVersion}"
+                + (description.IsDeprecated ? " (DEPRECATED)" : "")
+        });
+    }
+
+    // JWT Authentication in Swagger
+    // This adds the "Authorize" button (🔒) in Swagger UI
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = @"JWT Authorization header using the Bearer scheme.
+                        Enter 'Bearer' [space] and then your token in the text input below.
+                        Example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'"
     });
+
+    // Enable XML Comments
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+    options.IncludeXmlComments(xmlPath);
+
+    // Add operation filter to apply security only to endpoints with [Authorize]
+    options.OperationFilter<AuthorizeCheckOperationFilter>();
 });
 
 var app = builder.Build();
+
+// Get API version provider for Swagger UI
+var versionDescriptionProvider = app.Services.GetRequiredService<Asp.Versioning.ApiExplorer.IApiVersionDescriptionProvider>();
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
@@ -116,8 +187,20 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CoolLibrary API V1");
+        // Create a dropdown in Swagger UI for each API version
+        foreach (var description in versionDescriptionProvider.ApiVersionDescriptions.Reverse())
+        {
+            c.SwaggerEndpoint(
+                $"/swagger/{description.GroupName}/swagger.json",
+                $"CoolLibrary API {description.GroupName.ToUpperInvariant()}"
+            );
+        }
+        
         c.RoutePrefix = string.Empty; // Swagger UI at root
+        c.DocumentTitle = "CoolLibrary API Documentation";
+        c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List);
+        c.DisplayRequestDuration();
+        c.EnableFilter();
     });
 }
 

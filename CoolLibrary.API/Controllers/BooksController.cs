@@ -1,14 +1,22 @@
-using AutoMapper;
+﻿using AutoMapper;
 using CoolLibrary.Application.DTO;
 using CoolLibrary.Domain.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Asp.Versioning;
 
 namespace CoolLibrary.API.Controllers;
 
-
+/// <summary>
+/// Books catalog management
+/// All endpoints require JWT authentication
+/// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]  // ← Versioned route
 [Produces("application/json")]
+[Tags("📚 Catalog - Books")]
+[Authorize]  // JWT token required for all endpoints
+[ApiVersion("1.0")]  // ← This controller belongs to API v1.0
 public class BooksController : ControllerBase
 {
     private readonly IBooks _booksRepository;
@@ -22,9 +30,33 @@ public class BooksController : ControllerBase
         _mapper = mapper;
     }
 
-
+    /// <summary>
+    /// Gets all books from the library catalog
+    /// </summary>
+    /// <remarks>
+    /// Returns all books available in the library system including their availability status.
+    /// 
+    /// Response Sample:
+    /// 
+    ///     GET /api/books
+    ///     [
+    ///         {
+    ///             "bookId": 1,
+    ///             "title": "Clean Code",
+    ///             "isbn": "978-0132350884",
+    ///             "publishedDate": "2008-08-01",
+    ///             "availableCopies": 5,
+    ///             "totalCopies": 10
+    ///         }
+    ///     ]
+    /// 
+    /// </remarks>
+    /// <returns>List of all books in the catalog</returns>
+    /// <response code="200">Returns the list of books successfully</response>
+    /// <response code="500">Internal server error occurred</response>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<BookDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<BookDTO>>> GetAll()
     {
         try
