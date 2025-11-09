@@ -1,15 +1,23 @@
-using AutoMapper;
+﻿using AutoMapper;
 using CoolLibrary.Application.DTO;
 using CoolLibrary.Domain.Contracts;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Asp.Versioning;
 
 namespace CoolLibrary.API.Controllers;
 
-
+/// <summary>
+/// Customer management controller
+/// All endpoints require JWT authentication ([Authorize])
+/// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]  // ← Versioned route
 [Produces("application/json")]
+[Tags("👥 Management - Customers")]
+[Authorize]  // JWT token required for all endpoints in this controller
+[ApiVersion("1.0")]  // ← This controller belongs to API v1.0
 public class CustomersController : ControllerBase
 {
     private readonly ICustomers _customersRepository;
@@ -24,6 +32,26 @@ public class CustomersController : ControllerBase
     }
 
 
+
+    /// <summary>
+    /// gets all customers
+    /// </summary>
+    /// <remarks>
+    /// 
+    /// 
+    /// Response Sample:
+    /// 
+    ///     GET /api/customers
+    ///     [
+    ///         {
+    ///             "customerId": 1,
+    ///             "firstName": "John",
+    ///             "lastName": "Doe",
+    ///             "email": "john.doe@example.com"
+    ///         }
+    ///     ]
+    /// 
+    /// </remarks>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<CustomerDTO>>> GetAll()
@@ -54,7 +82,6 @@ public class CustomersController : ControllerBase
 
         try
         {
-            // Verificar si el email ya existe
             var emailExists = await _customersRepository.EmailExistsAsync(createCustomerDto.Email);
             if (emailExists)
             {
